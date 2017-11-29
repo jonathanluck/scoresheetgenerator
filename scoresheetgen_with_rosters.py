@@ -19,7 +19,7 @@ from time import sleep
 SCOPES = 'https://www.googleapis.com/auth/spreadsheets'
 CLIENT_SECRET_FILE = 'client_secrets.json'
 APPLICATION_NAME = 'Google Sheets API Python Quickstart'
-sheet_names = ["Round 1", "Round 2", "Round 3", "Round 4", "Round 5", "Round 6", "Round 7", "Round 8", "Round 9", "Round 10", "Round 11" , "Round 12", "Round 13"]#, "Round 14" , "Round 15", "Round 16", "Finals/Emergency", "Finals 2/Emergency"]
+sheet_names = ["Round 1", "Round 2", "Round 3", "Round 4", "Round 5", "Round 6", "Round 7", "Round 8", "Round 9", "Round 10", "Round 11" , "Round 12", "Round 13", "Round 14" , "Round 15", "Round 16"]#, "Finals/Emergency", "Finals 2/Emergency"]
 left_col = ["=CONCAT(\"A BP: \",IMPORTRANGE(\"{}\",\"{}!I32\"))", "=CONCAT(\"B BP: \",IMPORTRANGE(\"{}\",\"{}!S32\"))", "TUH", "15", "10", "-5", "Total", "=IMPORTRANGE(\"{}\",\"{}!W1\")"]
 team_a_range = "{}!C1:H3"
 team_b_range = "{}!M1:R3"
@@ -120,6 +120,7 @@ for name in sheet_names:
                 left_col_fmted[2] = left_col_fmted[2].format(rooms[room], name)
                 left_col_fmted[8] = left_col_fmted[8].format(rooms[room], name)
                 data = [{"range": name+"!A{}:A{}".format(i, i+9), "values":[left_col_fmted]}, {"range": name+"!B{}".format(i), "values":[[importrange_fstring.format(rooms[room], team_a_range.format(name), rooms[room], team_b_range.format(name))]]},{"range": name+"!B{}".format(i+3), "values":[[importrange_fstring.format(rooms[room], indiv_a_range.format(name), rooms[room], indiv_b_range.format(name))]]}]
+                data.append({"range": name + "!B{}".format(i+8),"values":[["https://docs.google.com/spreadsheets/d/{}/edit".format(rooms[room])]]})
                 d = {}
                 for j in data:
                         j["majorDimension"] = "COLUMNS"

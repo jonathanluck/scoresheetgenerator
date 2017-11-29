@@ -110,6 +110,7 @@ for name in sheet_names:
                 left_col_fmted[2] = left_col_fmted[2].format(rooms[room], name)
                 left_col_fmted[8] = left_col_fmted[8].format(rooms[room], name)
                 data = [{"range": name+"!A{}:A{}".format(i, i+9), "values":[left_col_fmted]}, {"range": name+"!B{}".format(i), "values":[[importrange_fstring.format(rooms[room], team_a_range.format(name), rooms[room], team_b_range.format(name))]]},{"range": name+"!B{}".format(i+3), "values":[[importrange_fstring.format(rooms[room], indiv_a_range.format(name), rooms[room], indiv_b_range.format(name))]]}]
+                data.append({"range": name + "!B{}".format(i+8),"values":[["https://docs.google.com/spreadsheets/d/{}/edit".format(rooms[room])]]})
                 d = {}
                 for j in data:
                         j["majorDimension"] = "COLUMNS"
