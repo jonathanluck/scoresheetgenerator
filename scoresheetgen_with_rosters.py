@@ -3,6 +3,8 @@ import httplib2
 import os
 import string
 
+from collections import OrderedDict
+
 from apiclient import discovery
 from oauth2client import client
 from oauth2client import tools
@@ -17,9 +19,12 @@ from time import sleep
 # If modifying these scopes, delete your previously saved credentials
 # at ~/.credentials/sheets.googleapis.com-python-quickstart.json
 SCOPES = 'https://www.googleapis.com/auth/spreadsheets'
+DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive'
+SHEET_CRED_FILE = 'sheets.googleapis.com-python-quickstart.json'
+DRIVE_CRED_FILE = 'drive.json'
 CLIENT_SECRET_FILE = 'client_secrets.json'
 APPLICATION_NAME = 'Google Sheets API Python Quickstart'
-sheet_names = ["Round 1", "Round 2", "Round 3", "Round 4", "Round 5", "Round 6", "Round 7", "Round 8", "Round 9", "Round 10", "Round 11" , "Round 12", "Round 13", "Round 14" , "Round 15", "Round 16"]#, "Finals/Emergency", "Finals 2/Emergency"]
+sheet_names = ["Round 1", "Round 2", "Round 3", "Round 4", "Round 5", "Round 6", "Round 7", "Round 8", "Round 9", "Round 10", "Round 11" , "Round 12", "Round 13"]#, "Round 14" , "Round 15", "Round 16", "Finals/Emergency", "Finals 2/Emergency"]
 left_col = ["=CONCAT(\"A BP: \",IMPORTRANGE(\"{}\",\"{}!I32\"))", "=CONCAT(\"B BP: \",IMPORTRANGE(\"{}\",\"{}!S32\"))", "TUH", "15", "10", "-5", "Total", "=IMPORTRANGE(\"{}\",\"{}!W1\")"]
 team_a_range = "{}!C1:H3"
 team_b_range = "{}!M1:R3"
@@ -27,6 +32,11 @@ indiv_a_range = "{}!C32:H36"
 indiv_b_range = "{}!M32:R36"
 importrange_fstring = "={{IMPORTRANGE(\"{}\",\"{}\"),IMPORTRANGE(\"{}\",\"{}\")}}"
 
+try:
+    import argparse
+    flags = argparse.ArgumentParser(parents=[tools.argparser]).parse_args()
+except ImportError:
+    flags = None
 
 def get_gridRange(A1, i):
     col = A1[0]
@@ -35,7 +45,7 @@ def get_gridRange(A1, i):
     return {"sheetId" : i, "startRowIndex" : row -1, "endRowIndex" : row, "startColumnIndex" : d[col], "endColumnIndex": d[col] + 1}
 
 def get_rooms():
-    d = {}
+    d = OrderedDict()
     while True:
         inp = input("room number: ")
         if(len(inp) == 0):
@@ -44,7 +54,7 @@ def get_rooms():
             d[inp] = ""
     return d
 
-def get_credentials():
+def get_credentials(filename, scope):
     """Gets valid user credentials from storage.
 
     If nothing has been stored, or if the stored credentials are invalid,
@@ -57,13 +67,12 @@ def get_credentials():
     credential_dir = os.path.join(home_dir, '.credentials')
     if not os.path.exists(credential_dir):
         os.makedirs(credential_dir)
-    credential_path = os.path.join(credential_dir,
-                                   'sheets.googleapis.com-python-quickstart.json')
+    credential_path = os.path.join(credential_dir, filename)
 
     store = Storage(credential_path)
     credentials = store.get()
     if not credentials or credentials.invalid:
-        flow = client.flow_from_clientsecrets(CLIENT_SECRET_FILE, SCOPES)
+        flow = client.flow_from_clientsecrets(CLIENT_SECRET_FILE, scope)
         flow.user_agent = APPLICATION_NAME
         if flags:
             credentials = tools.run_flow(flow, store, flags)
@@ -72,30 +81,22 @@ def get_credentials():
         print('Storing credentials to ' + credential_path)
     return credentials
 
+
+drive_creds = get_credentials(DRIVE_CRED_FILE, DRIVE_SCOPE)
+drive_creds.refresh(httplib2.Http())
+gauth = GoogleAuth()
+gauth.credentials = drive_creds
+gauth.Authorize()
+drive = GoogleDrive(gauth)
+
+
 master_scoresheet_id = input("Master scoresheet id: ")
 master_agg_id = input("Master aggregate id: ")
 master_roster_id = input("Master roster id: ")
 
 
-gauth = GoogleAuth()
-try:
-    #if(os.path.exists("creds.json")):
-        gauth.LoadCredentialsFile("creds.json")
-        gauth.Authorize()
-except:
-    gauth.LocalWebserverAuth()
-    gauth.SaveCredentialsFile("creds.json")
-drive = GoogleDrive(gauth)
-
-try:
-    import argparse
-    flags = argparse.ArgumentParser(parents=[tools.argparser]).parse_args()
-except ImportError:
-    flags = None
-
-
 rooms = get_rooms()
-credentials = get_credentials()
+credentials = get_credentials(SHEET_CRED_FILE, SCOPES)
 http = credentials.authorize(httplib2.Http())
 discoveryUrl = ('https://sheets.googleapis.com/$discovery/rest?'
                 'version=v4')
@@ -113,7 +114,7 @@ for room in rooms:
 k = 0
 for name in sheet_names:
         i = 1
-        for room in sorted(rooms):
+        for room in rooms:
                 left_col_fmted = copy(left_col)
                 left_col_fmted.insert(0, room)
                 left_col_fmted[1] = left_col_fmted[1].format(rooms[room], name)
@@ -128,7 +129,7 @@ for name in sheet_names:
                 d["valueInputOption"] = "USER_ENTERED"
                 res = service.spreadsheets().values().batchUpdate(spreadsheetId=agg_id, body=d).execute()
                 i += 10
-        sleep(5)
+        sleep(1)
         print("Finished: "  + name)
 print("Finished aggregation")
 
